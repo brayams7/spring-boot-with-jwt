@@ -1,0 +1,65 @@
+services:
+  postgres:
+    container_name: postgres-sql-lsn
+    image: postgres
+    ports:
+      - "5430:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: library_social_network_db
+      PGDATA: /var/lib/postgresql/data
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - lsn_network
+
+    restart: unless-stopped # reiniciar si el contenedor se detiene
+
+  lsn-api:
+    container_name: lsn-api
+    image: lsn/lsn:1.0.1
+    environment:
+      - ACTIVE_PROFILE=dev
+      - JAR_VERSION=1.0.1
+      - DB_URL=jdbc:postgresql://postgres-sql-lsn:5432/library_social_network_db
+    ports:
+      - 8088:8088
+    networks:
+      - lsn_network
+
+    depends_on:
+      - postgres
+
+  lsn-fe:
+    container_name: lsn-fe
+    image: lsnfe/lsnfe:1.0.1
+    ports:
+      - 5173:80
+    networks:
+      - lsn_network
+    depends_on:
+      - lsn-api
+
+  mail-dev:
+    container_name: mail-dev-bsn
+    image: maildev/maildev
+    # in production remove this
+    networks:
+      - lsn_network
+    ports:
+      - 1080:1080
+      - 1025:1025
+
+
+
+
+networks:
+  lsn_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
